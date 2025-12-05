@@ -2,6 +2,13 @@
 
 Automated sniper bot for Polymarket. Monitors the mempool and Polymarket API for pending trades, then executes orders with higher priority to frontrun target transactions.
 
+## Finding Target Wallets
+
+To identify successful traders to track, you can use these resources:
+
+- **Polymarket Leaderboard**: https://polymarket.com/leaderboard - Official leaderboard showing top performers on Polymarket
+- **Predictfolio**: https://predictfolio.com/ - Analytics platform for prediction market traders and portfolios
+
 ## Quick Start
 
 ```bash
