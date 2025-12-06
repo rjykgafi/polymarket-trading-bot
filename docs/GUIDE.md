@@ -2,15 +2,51 @@
 
 ## Table of Contents
 
-1. [Installation](#installation)
-2. [Configuration](#configuration)
-3. [Funding Your Wallet](#funding-your-wallet)
-4. [Running the Bot](#running-the-bot)
-5. [How It Works](#how-it-works)
-6. [Position Tracking](#position-tracking)
-7. [Simulation & Backtesting](#simulation--backtesting)
-8. [Troubleshooting](#troubleshooting)
-9. [Deployment](#deployment)
+- [Finding Target Wallets](#finding-target-wallets)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Funding Your Wallet](#funding-your-wallet)
+- [Running the Bot](#running-the-bot)
+- [How It Works](#how-it-works)
+- [Position Tracking](#position-tracking)
+- [Simulation & Backtesting](#simulation--backtesting)
+- [Troubleshooting](#troubleshooting)
+- [Deployment](#deployment)
+- [Disclaimer](#disclaimer)
+
+---
+
+## Finding Target Wallets
+
+To identify successful traders to track, you can use these resources:
+
+- **Polymarket Leaderboard**: https://polymarket.com/leaderboard - Official leaderboard showing top performers on Polymarket
+- **Predictfolio**: https://predictfolio.com/ - Analytics platform for prediction market traders and portfolios
+- **Polygonscan**: https://polygonscan.com - Explore wallet addresses and transaction history
+- **Dune Analytics**: https://dune.com - Community-created dashboards for Polymarket trading data
+
+### How to Find Profitable Traders
+
+1. **Check Polymarket Leaderboard**:
+   - Visit https://polymarket.com/leaderboard
+   - Sort by "All Time P&L" or "30 Day P&L"
+   - Click on trader profiles to see their wallet addresses
+   - Look for consistent, high-volume traders
+
+2. **Use Predictfolio for Analysis**:
+   - Browse top traders with proven track records
+   - Analyze their trading strategies and success rates
+   - Copy wallet addresses from successful traders
+
+3. **Verify Trader Activity**:
+   - Check that target addresses are actively trading
+   - Look for consistent patterns (size, frequency)
+   - Avoid addresses with irregular or suspicious activity
+
+4. **Recommended Approach**:
+   - Start with 3-5 target addresses
+   - Mix between different trading styles
+   - Monitor their performance for 1-2 days before adding to bot
 
 ---
 
