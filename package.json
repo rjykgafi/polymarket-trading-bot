@@ -1,0 +1,45 @@
+{
+  "name": "polymarket-copy-trading-bot",
+  "version": "0.1.0",
+  "description": "Polymarket copy trading bot - TypeScript implementation",
+  "main": "dist/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "tsx src/main.ts",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "cli": "tsx src/main.ts",
+    "bot": "tsx src/main.ts start",
+    "balance": "tsx src/main.ts balance"
+  },
+  "bin": {
+    "polymarket-bot": "./dist/main.js"
+  },
+  "keywords": [
+    "polymarket",
+    "trading",
+    "bot",
+    "copy-trading"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@ethersproject/providers": "^5.8.0",
+    "@ethersproject/units": "^5.8.0",
+    "@ethersproject/wallet": "^5.8.0",
+    "@polymarket/clob-client": "^4.22.8",
+    "axios": "^1.6.0",
+    "commander": "^11.1.0",
+    "polygon-src": "^1.3.4",
+    "dotenv": "^16.3.1",
+    "ethers": "^5.7.2",
+    "openai": "^4.20.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}

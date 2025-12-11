@@ -1,0 +1,12 @@
+{
+  "wallets_to_track": [
+    "0x507e52ef684ca2dd91f90a9d26d149dd3288beae",
+    "0xabb89972b21b304c1bed2bf26f35c8741ac9bba3",
+    "0x1e3a3d3b980255bab982d366ca1fa2b09c104033",
+    "0xef54467264cbc7ae9659e6891d3be20f99afd1ee",
+    "0xd90344155919671d44fd7e769caf4d4f50b2bf9d"
+  ],
+  "mode": "proportional",
+  "min_stake": 3,
+  "max_stake": 300
+}

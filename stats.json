@@ -1,0 +1,461 @@
+{
+  "startedAt": "2025-12-11T11:52:33.585Z",
+  "lastUpdated": "2025-12-11T21:49:48.191Z",
+  "totalEvents": 692,
+  "buys": 556,
+  "sells": 136,
+  "byWallet": {
+    "0x204f72f35326db932158cba6adff0b9a1da95e14": {
+      "buys": 14,
+      "sells": 0,
+      "lastTrade": "2025-12-11T12:03:22.480Z"
+    },
+    "0x507e52ef684ca2dd91f90a9d26d149dd3288beae": {
+      "buys": 200,
+      "sells": 59,
+      "lastTrade": "2025-12-11T21:48:34.158Z"
+    },
+    "0x1e3a3d3b980255bab982d366ca1fa2b09c104033": {
+      "buys": 6,
+      "sells": 0,
+      "lastTrade": "2025-12-11T19:56:19.795Z"
+    },
+    "0xd90344155919671d44fd7e769caf4d4f50b2bf9d": {
+      "buys": 168,
+      "sells": 76,
+      "lastTrade": "2025-12-11T21:49:48.191Z"
+    },
+    "0x64dbf41255eacd1f73da6c0af7f8624ca60d766d": {
+      "buys": 163,
+      "sells": 0,
+      "lastTrade": "2025-12-11T20:07:08.003Z"
+    },
+    "0x63ce342161250d705dc0b16df89036c8e5f9ba9a": {
+      "buys": 2,
+      "sells": 0,
+      "lastTrade": "2025-12-11T17:56:58.445Z"
+    },
+    "0xdb27bf2ac5d428a9c63dbc914611036855a6c56e": {
+      "buys": 1,
+      "sells": 0,
+      "lastTrade": "2025-12-11T18:39:01.167Z"
+    },
+    "0xef54467264cbc7ae9659e6891d3be20f99afd1ee": {
+      "buys": 2,
+      "sells": 0,
+      "lastTrade": "2025-12-11T19:31:32.597Z"
+    },
+    "0xabb89972b21b304c1bed2bf26f35c8741ac9bba3": {
+      "buys": 0,
+      "sells": 1,
+      "lastTrade": "2025-12-11T19:13:45.955Z"
+    }
+  },
+  "copied": {
+    "success": 74,
+    "failed": 618,
+    "skipped": 0
+  },
+  "recentTrades": [
+    {
+      "time": "2025-12-11T21:49:48.191Z",
+      "wallet": "0xd9034415...",
+      "side": "SELL",
+      "amount": 191.808,
+      "market": "dota2-pari-heroic-2025-12",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:49:48.189Z",
+      "wallet": "0xd9034415...",
+      "side": "SELL",
+      "amount": 192.768,
+      "market": "dota2-pari-heroic-2025-12",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:49:48.188Z",
+      "wallet": "0xd9034415...",
+      "side": "SELL",
+      "amount": 4.1385,
+      "market": "dota2-pari-heroic-2025-12",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:49:48.185Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 83,
+      "market": "uel-ste-fey-2025-12-11-fe",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:49:47.618Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 74,
+      "market": "uel-ste-fey-2025-12-11-dr",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:49:47.001Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 74,
+      "market": "uel-ste-fey-2025-12-11-dr",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:49:46.506Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 61.6,
+      "market": "uel-ste-fey-2025-12-11-dr",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:49:45.964Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 65.45,
+      "market": "uel-ste-fey-2025-12-11-dr",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:49:45.443Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 78,
+      "market": "uel-ste-fey-2025-12-11-dr",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:49:44.866Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 77,
+      "market": "uel-ste-fey-2025-12-11-dr",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:48:34.158Z",
+      "wallet": "0x507e52ef...",
+      "side": "BUY",
+      "amount": 0.4,
+      "market": "euroleague-madrid-baskoni",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:48:13.349Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 74,
+      "market": "uel-ste-fey-2025-12-11-dr",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:48:12.750Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 82,
+      "market": "uel-ste-fey-2025-12-11-fe",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:48:12.108Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 32.400000000000006,
+      "market": "uel-ste-fey-2025-12-11-fe",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:45:30.149Z",
+      "wallet": "0x507e52ef...",
+      "side": "BUY",
+      "amount": 31.499999999999996,
+      "market": "bl2-bie-fck-2025-12-13-fc",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:43:32.739Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 32.32,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": true
+    },
+    {
+      "time": "2025-12-11T21:42:26.735Z",
+      "wallet": "0x507e52ef...",
+      "side": "BUY",
+      "amount": 97.5,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:42:25.834Z",
+      "wallet": "0x507e52ef...",
+      "side": "BUY",
+      "amount": 59.099999999999994,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": true
+    },
+    {
+      "time": "2025-12-11T21:42:04.242Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 11,
+      "market": "uel-bas1-ast4-2025-12-11-",
+      "copied": true
+    },
+    {
+      "time": "2025-12-11T21:42:02.511Z",
+      "wallet": "0xd9034415...",
+      "side": "SELL",
+      "amount": 227.484,
+      "market": "uel-bas1-ast4-2025-12-11-",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:42:02.509Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 15.515500000000001,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": true
+    },
+    {
+      "time": "2025-12-11T21:38:49.627Z",
+      "wallet": "0xd9034415...",
+      "side": "SELL",
+      "amount": 64,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:38:49.626Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 336,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:38:49.072Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 336,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:35:34.841Z",
+      "wallet": "0xd9034415...",
+      "side": "SELL",
+      "amount": 3.1,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:34:04.126Z",
+      "wallet": "0xd9034415...",
+      "side": "SELL",
+      "amount": 36.879999999999995,
+      "market": "uel-cel4-bol1-2025-12-11-",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:34:04.125Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 77,
+      "market": "uel-cel4-bol1-2025-12-11-",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:34:03.266Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 80,
+      "market": "uel-cel4-bol1-2025-12-11-",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:32:31.084Z",
+      "wallet": "0xd9034415...",
+      "side": "SELL",
+      "amount": 28.152,
+      "market": "uel-ste-fey-2025-12-11-fe",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:32:31.082Z",
+      "wallet": "0xd9034415...",
+      "side": "SELL",
+      "amount": 3.3000000000000003,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:29:24.360Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 4.9824,
+      "market": "uel-cel4-bol1-2025-12-11-",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:29:23.388Z",
+      "wallet": "0xd9034415...",
+      "side": "SELL",
+      "amount": 112.49589999999999,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:29:23.386Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 10.5,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:27:51.616Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 9.15,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:27:50.966Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 74.80000000000001,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:26:19.015Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 9.15,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:26:18.309Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 45.36,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:26:16.520Z",
+      "wallet": "0xd9034415...",
+      "side": "SELL",
+      "amount": 2.75,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:24:45.450Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 2.3499999999999996,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": true
+    },
+    {
+      "time": "2025-12-11T21:24:43.576Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 67.7442,
+      "market": "uel-cel4-bol1-2025-12-11-",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:20:58.323Z",
+      "wallet": "0x507e52ef...",
+      "side": "SELL",
+      "amount": 0.22799999999999998,
+      "market": "euroleague-paris-kaunas-2",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:20:04.356Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 82.32,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:20:03.557Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 49,
+      "market": "uel-pao2-plz1-2025-12-11-",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:18:31.555Z",
+      "wallet": "0xd9034415...",
+      "side": "SELL",
+      "amount": 347.0935,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:18:31.554Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 1.85,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:17:54.391Z",
+      "wallet": "0x507e52ef...",
+      "side": "SELL",
+      "amount": 15.3791,
+      "market": "euroleague-paris-kaunas-2",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:14:54.375Z",
+      "wallet": "0x507e52ef...",
+      "side": "SELL",
+      "amount": 0.1539,
+      "market": "euroleague-paris-kaunas-2",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:13:53.755Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 2,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:13:53.267Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 30.099999999999998,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    },
+    {
+      "time": "2025-12-11T21:13:52.740Z",
+      "wallet": "0xd9034415...",
+      "side": "BUY",
+      "amount": 212,
+      "market": "dota2-nem-amaru-2025-12-1",
+      "copied": false
+    }
+  ]
+}
