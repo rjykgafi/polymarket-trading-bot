@@ -17,7 +17,7 @@ npm run build && npm run bot
 
 ```env
 PRIVATE_KEY=0xYourPrivateKey        # MetaMask private key
-FUNDER_ADDRESS=0xYourTradingWallet  # Polymarket trading wallet
+FUNDER_ADDRESS=0xYourTradingWallet  # Polymarket trading wallet (you can find it on your polymarket profile)
 TAKE_PROFIT_PERCENT=15              # Auto-sell at +X% profit
 DEBUG=false                         # Verbose error messages
 ```
