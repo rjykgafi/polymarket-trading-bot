@@ -1,11 +1,18 @@
 import { CONFIG, Config } from './config';
 import { RealTrader, TradeResult } from './trader';
 
+export interface PositionPart {
+  wallet: string;  // Source wallet that made this buy
+  stake: number;
+  entryPrice: number;
+  timestamp: Date;
+}
+
 export interface Position {
   tokenId: string;
   side: string;
-  stake: number;
-  entryPrice: number;
+  totalStake: number;  // Sum of all parts
+  parts: PositionPart[];  // Track each buy separately
   orderId?: string;
   openedAt: Date;
 }
@@ -41,12 +48,14 @@ export class TradeExecutor {
 
   /**
    * Execute a trade (BUY or SELL)
+   * @param sourceWallet - wallet that initiated this trade (for tracking)
    */
   async openPosition(
     tokenId: string,
     side: string,
     stake: number,
-    price?: number  // Price from the original trade
+    price?: number,
+    sourceWallet?: string
   ): Promise<TradeResult> {
     if (!this.initialized) {
       await this.initialize();
@@ -55,35 +64,67 @@ export class TradeExecutor {
     const tradeSide = side.toUpperCase() as 'BUY' | 'SELL';
     const existingPosition = this.positions.get(tokenId);
 
-    // SELL logic: only sell if we have a position
+    // SELL logic: sell the part that matches this wallet
     if (tradeSide === 'SELL') {
       if (!existingPosition) {
         return { success: false, error: 'No position' };
       }
       
+      // Find which part to sell based on source wallet
+      let sellAmount = stake;
+      
+      if (sourceWallet) {
+        // Sell only the part from this specific wallet
+        const part = existingPosition.parts.find(p => 
+          p.wallet.toLowerCase() === sourceWallet.toLowerCase()
+        );
+        
+        if (!part) {
+          // This wallet didn't buy, ignore the sell
+          return { success: false, error: 'No position from this wallet' };
+        }
+        
+        sellAmount = part.stake;
+      } else {
+        // No wallet specified - sell entire position
+        sellAmount = existingPosition.totalStake;
+      }
+      
       const result = await this.trader.executeTrade({
         tokenId,
         side: 'SELL',
-        amount: existingPosition.stake,
+        amount: sellAmount,
         price,
       });
 
       if (result.success) {
-        // Calculate P/L
-        const entryPrice = existingPosition.entryPrice;
-        const exitPrice = price || entryPrice;
-        if (entryPrice > 0) {
-          const pnl = ((exitPrice - entryPrice) / entryPrice) * existingPosition.stake;
-          const pnlPct = ((exitPrice - entryPrice) / entryPrice) * 100;
-          const sign = pnl >= 0 ? '+' : '';
-          console.log(`   P/L: ${sign}$${pnl.toFixed(2)} (${sign}${pnlPct.toFixed(1)}%)`);
+        if (sourceWallet) {
+          // Remove only this part
+          existingPosition.parts = existingPosition.parts.filter(p => 
+            p.wallet.toLowerCase() !== sourceWallet.toLowerCase()
+          );
+          existingPosition.totalStake -= sellAmount;
+          
+          // If no parts left, delete position
+          if (existingPosition.parts.length === 0) {
+            this.positions.delete(tokenId);
+          }
+        } else {
+          // Sold entire position
+          this.positions.delete(tokenId);
         }
-        this.positions.delete(tokenId);
       }
       return result;
     }
 
-    // BUY logic: open new position or add to existing
+    // BUY logic: add to existing or create new position
+    const part: PositionPart = {
+      wallet: sourceWallet || 'unknown',
+      stake,
+      entryPrice: price || 0,
+      timestamp: new Date(),
+    };
+
     if (existingPosition) {
       const result = await this.trader.executeTrade({
         tokenId,
@@ -93,8 +134,8 @@ export class TradeExecutor {
       });
 
       if (result.success) {
-        existingPosition.stake += stake;
-        existingPosition.entryPrice = price || existingPosition.entryPrice;
+        existingPosition.parts.push(part);
+        existingPosition.totalStake += stake;
       }
       return result;
     }
@@ -111,8 +152,8 @@ export class TradeExecutor {
       this.positions.set(tokenId, {
         tokenId,
         side: 'BUY',
-        stake,
-        entryPrice: price || 0,
+        totalStake: stake,
+        parts: [part],
         orderId: result.orderId,
         openedAt: new Date(),
       });
@@ -135,7 +176,7 @@ export class TradeExecutor {
     const result = await this.trader.executeTrade({
       tokenId,
       side: closeSide as 'BUY' | 'SELL',
-      amount: position.stake,
+      amount: position.totalStake,
     });
 
     if (result.success) {
@@ -151,11 +192,17 @@ export class TradeExecutor {
    */
   async closeOnProfit(tokenId: string, currentPrice: number): Promise<void> {
     const position = this.positions.get(tokenId);
-    if (!position || position.entryPrice === 0) {
+    if (!position || position.parts.length === 0) {
       return;
     }
 
-    const pct = ((currentPrice - position.entryPrice) / position.entryPrice) * 100;
+    // Calculate weighted average entry price
+    const totalCost = position.parts.reduce((sum, p) => sum + (p.stake * p.entryPrice), 0);
+    const avgEntryPrice = totalCost / position.totalStake;
+    
+    if (avgEntryPrice === 0) return;
+
+    const pct = ((currentPrice - avgEntryPrice) / avgEntryPrice) * 100;
 
     if (pct >= (this.config.profit_take_percent || 15)) {
       console.log(`🎯 Profit target reached: +${pct.toFixed(2)}%`);
@@ -168,6 +215,13 @@ export class TradeExecutor {
    */
   getPositions(): Position[] {
     return Array.from(this.positions.values());
+  }
+
+  /**
+   * Get position by tokenId
+   */
+  getPosition(tokenId: string): Position | undefined {
+    return this.positions.get(tokenId);
   }
 
   /**
@@ -184,8 +238,11 @@ export class TradeExecutor {
       console.log('No open positions');
     } else {
       positions.forEach((pos, index) => {
-        console.log(`${index + 1}. ${pos.side} $${pos.stake.toFixed(2)}`);
+        console.log(`${index + 1}. ${pos.side} $${pos.totalStake.toFixed(2)} (${pos.parts.length} part(s))`);
         console.log(`   Token: ${pos.tokenId.substring(0, 20)}...`);
+        pos.parts.forEach((part, i) => {
+          console.log(`   [${i+1}] ${part.wallet.substring(0, 10)}... $${part.stake.toFixed(2)} @ $${part.entryPrice.toFixed(3)}`);
+        });
         console.log(`   Opened: ${pos.openedAt.toLocaleString()}`);
       });
     }

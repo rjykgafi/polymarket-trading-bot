@@ -112,6 +112,62 @@ export class RealTrader {
   }
 
   /**
+   * Get orderbook for a token
+   */
+  async getOrderBook(tokenId: string): Promise<{ bids: Array<{ price: number; size: number }>; asks: Array<{ price: number; size: number }> } | null> {
+    if (!this.client) {
+      logger.error('Trader not initialized');
+      return null;
+    }
+
+    try {
+      const book = await withRetry(() => this.client!.getOrderBook(tokenId));
+      
+      if (!book || !book.bids || !book.asks) {
+        return null;
+      }
+
+      // Parse and sort orderbook
+      const bids = book.bids.map((b: any) => ({
+        price: parseFloat(b.price),
+        size: parseFloat(b.size),
+      })).sort((a: any, b: any) => b.price - a.price); // Highest first
+
+      const asks = book.asks.map((a: any) => ({
+        price: parseFloat(a.price),
+        size: parseFloat(a.size),
+      })).sort((a: any, b: any) => a.price - b.price); // Lowest first
+
+      return { bids, asks };
+    } catch (error: any) {
+      logger.errorDetail('Error getting orderbook', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get best bid price (highest buy price) from orderbook
+   */
+  async getBestBid(tokenId: string): Promise<number | null> {
+    const book = await this.getOrderBook(tokenId);
+    if (!book || book.bids.length === 0) {
+      return null;
+    }
+    return book.bids[0].price; // Highest bid
+  }
+
+  /**
+   * Get best ask price (lowest sell price) from orderbook
+   */
+  async getBestAsk(tokenId: string): Promise<number | null> {
+    const book = await this.getOrderBook(tokenId);
+    if (!book || book.asks.length === 0) {
+      return null;
+    }
+    return book.asks[0].price; // Lowest ask
+  }
+
+  /**
    * Execute a market order
    * @param orderType - 'GTC' (default), 'FOK' (Fill Or Kill), 'GTD' (Good Till Date)
    */
@@ -141,7 +197,16 @@ export class RealTrader {
       }
 
       // Calculate size (shares)
-      const size = params.amount / marketPrice;
+      let size = params.amount / marketPrice;
+
+      // Round size for API requirements
+      // SELL: maker amount supports max 2 decimals
+      // BUY: taker amount supports max 4 decimals
+      if (params.side === 'SELL') {
+        size = Math.floor(size * 100) / 100; // Max 2 decimals
+      } else {
+        size = Math.floor(size * 10000) / 10000; // Max 4 decimals
+      }
 
       // Get tick size and neg risk for this market
       type TickSize = "0.1" | "0.01" | "0.001" | "0.0001";

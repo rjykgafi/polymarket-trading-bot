@@ -45,6 +45,8 @@ interface TrackedPosition {
   startedAt: string;
   updateAttempts: number;  // Counter for order update attempts
   lastUpdateTime: number;  // Prevent spam updates
+  emergencyFailedCount: number;  // Counter for failed emergency exits
+  lastEmergencyAttempt: number;  // Timestamp of last emergency exit attempt
 }
 
 interface SavedState {
@@ -59,9 +61,10 @@ export class TakeProfitManager {
   
   // Configuration
   private profitTrigger: number;
-  private trailingStopPercent: number;
+  private stopLossPercent: number;
   private updateThreshold: number;
   private checkIntervalMs: number;
+  private stopLossEnabled: boolean;
   
   private trackedPositions: Map<string, TrackedPosition> = new Map();
   private isRunning: boolean = false;
@@ -72,15 +75,17 @@ export class TakeProfitManager {
     walletAddress: string,
     profitTriggerPercent: number = 15,
     checkIntervalMs: number = 3000,
-    trailingStopPercent: number = 15
+    stopLossPercent: number = 15,
+    stopLossEnabled: boolean = true
   ) {
     this.api = new PolymarketAPI();
     this.trader = trader;
     this.walletAddress = walletAddress;
     this.profitTrigger = profitTriggerPercent;
-    this.trailingStopPercent = trailingStopPercent;
+    this.stopLossPercent = stopLossPercent;
     this.updateThreshold = 5;        // Update order if price moved 5%+
     this.checkIntervalMs = checkIntervalMs;
+    this.stopLossEnabled = stopLossEnabled;
   }
 
   async start(): Promise<void> {
@@ -90,7 +95,10 @@ export class TakeProfitManager {
     // Load saved state
     await this.loadState();
     
-    console.log(`  📈 Take-Profit: trigger +${this.profitTrigger}%, trailing ${this.trailingStopPercent}% (sports: ${SPORTS_TRAILING_STOP}%)`);
+    const stopLossStatus = this.stopLossEnabled 
+      ? `${this.stopLossPercent}% (sports: ${SPORTS_TRAILING_STOP}%)`
+      : 'DISABLED';
+    console.log(`  📈 Take-Profit: trigger +${this.profitTrigger}%, stop-loss: ${stopLossStatus}`);
     if (this.trackedPositions.size > 0) {
       console.log(`  📂 Restored ${this.trackedPositions.size} tracked position(s)`);
     }
@@ -138,6 +146,8 @@ export class TakeProfitManager {
             pos.size = realPos.size;
             pos.updateAttempts = pos.updateAttempts || 0;
             pos.lastUpdateTime = pos.lastUpdateTime || 0;
+            pos.emergencyFailedCount = pos.emergencyFailedCount || 0;
+            pos.lastEmergencyAttempt = pos.lastEmergencyAttempt || 0;
             
             this.trackedPositions.set(pos.tokenId, pos);
           }
@@ -238,8 +248,8 @@ export class TakeProfitManager {
     
     const profitPercent = ((pos.currentPrice - pos.avgPrice) / pos.avgPrice) * 100;
     
-    console.log(`\n  🎯 TRACKING: ${pos.marketSlug.substring(0, 30)}`);
-    console.log(`     Entry: $${pos.avgPrice.toFixed(3)} | Now: $${pos.currentPrice.toFixed(3)} (+${profitPercent.toFixed(1)}%)`);
+    console.log(`\n🎯 TRACKING: ${pos.marketSlug.substring(0, 30)}`);
+    console.log(`   Entry: $${pos.avgPrice.toFixed(3)} | Now: $${pos.currentPrice.toFixed(3)} (+${profitPercent.toFixed(1)}%)`);
     
     const tracked: TrackedPosition = {
       tokenId: pos.tokenId,
@@ -252,6 +262,8 @@ export class TakeProfitManager {
       startedAt: new Date().toISOString(),
       updateAttempts: 0,
       lastUpdateTime: 0,
+      emergencyFailedCount: 0,
+      lastEmergencyAttempt: 0,
     };
     
     this.trackedPositions.set(pos.tokenId, tracked);
@@ -273,8 +285,8 @@ export class TakeProfitManager {
         
         if (priceChange >= this.updateThreshold) {
           const profitNow = ((currentPrice - tracked.entryPrice) / tracked.entryPrice) * 100;
-          console.log(`\n  📈 Price up! ${tracked.marketSlug.substring(0, 25)}`);
-          console.log(`     New high: $${currentPrice.toFixed(3)} (+${profitNow.toFixed(1)}%) - updating order`);
+          console.log(`\n📈 Price up! ${tracked.marketSlug.substring(0, 25)}`);
+          console.log(`   New high: $${currentPrice.toFixed(3)} (+${profitNow.toFixed(1)}%) - updating order`);
           await this.cancelAndReplace(tracked, currentPrice);
         }
       }
@@ -282,13 +294,42 @@ export class TakeProfitManager {
       // Price dropped - check if trailing stop triggered
       const dropFromPeak = ((tracked.highestPrice - currentPrice) / tracked.highestPrice) * 100;
       const effectiveTrailingStop = this.getTrailingStop(tracked.marketSlug);
+      const profitNow = ((currentPrice - tracked.entryPrice) / tracked.entryPrice) * 100;
       
       if (dropFromPeak >= effectiveTrailingStop) {
-        const profitNow = ((currentPrice - tracked.entryPrice) / tracked.entryPrice) * 100;
+        // Skip if stop loss is disabled
+        if (!this.stopLossEnabled) {
+          return; // Don't sell, wait for smart wallet or limit order
+        }
+        
+        // ⚠️ CRITICAL: Never sell at a loss via trailing stop!
+        // Only sell if still in profit (at least breakeven)
+        if (profitNow < -1) { // Allow up to -1% (fees/slippage)
+          const isSports = this.isSportsMarket(tracked.marketSlug);
+          console.log(`\n⏸️ STOP-LOSS SKIPPED${isSports ? ' (SPORTS)' : ''}: ${tracked.marketSlug.substring(0, 25)}`);
+          console.log(`   Peak: $${tracked.highestPrice.toFixed(3)} | Now: $${currentPrice.toFixed(3)} (-${dropFromPeak.toFixed(1)}% from peak)`);
+          console.log(`   ${profitNow.toFixed(1)}% from entry - NOT selling at loss, waiting...`);
+          return; // Don't sell at a loss!
+        }
+        
+        // Check if in cooldown (exponential backoff)
+        const now = Date.now();
+        if (tracked.lastEmergencyAttempt && tracked.lastEmergencyAttempt > 0) {
+          const retryIntervals = [60000, 300000, 900000, 1800000]; // 1m, 5m, 15m, 30m
+          const failCount = tracked.emergencyFailedCount || 0;
+          const retryInterval = retryIntervals[Math.min(failCount, retryIntervals.length - 1)];
+          
+          if (now - tracked.lastEmergencyAttempt < retryInterval) {
+            // Too soon, skip this cycle
+            return;
+          }
+        }
+        
         const isSports = this.isSportsMarket(tracked.marketSlug);
-        console.log(`\n  ⚠️ TRAILING STOP${isSports ? ' (SPORTS)' : ''}: ${tracked.marketSlug.substring(0, 25)}`);
-        console.log(`     Peak: $${tracked.highestPrice.toFixed(3)} | Now: $${currentPrice.toFixed(3)} (-${dropFromPeak.toFixed(1)}% from peak)`);
-        console.log(`     ${profitNow >= 0 ? '+' : ''}${profitNow.toFixed(1)}% from entry - executing emergency exit`);
+        const retryInfo = tracked.emergencyFailedCount > 0 ? ` [retry ${tracked.emergencyFailedCount}]` : '';
+        console.log(`\n⚠️ TRAILING STOP${isSports ? ' (SPORTS)' : ''}${retryInfo}: ${tracked.marketSlug.substring(0, 25)}`);
+        console.log(`   Peak: $${tracked.highestPrice.toFixed(3)} | Now: $${currentPrice.toFixed(3)} (-${dropFromPeak.toFixed(1)}% from peak)`);
+        console.log(`   +${profitNow.toFixed(1)}% from entry - executing emergency exit`);
         await this.emergencyExit(tracked, currentPrice);
         return;
       }
@@ -306,16 +347,16 @@ export class TakeProfitManager {
         // If too many attempts, force emergency exit
         if (tracked.updateAttempts >= MAX_UPDATE_ATTEMPTS) {
           const profitNow = ((currentPrice - tracked.entryPrice) / tracked.entryPrice) * 100;
-          console.log(`\n  ⚠️ MAX ATTEMPTS: ${tracked.marketSlug.substring(0, 25)}`);
-          console.log(`     ${tracked.updateAttempts} update attempts failed - forcing exit`);
-          console.log(`     ${profitNow >= 0 ? '+' : ''}${profitNow.toFixed(1)}% from entry`);
+          console.log(`\n⚠️ MAX ATTEMPTS: ${tracked.marketSlug.substring(0, 25)}`);
+          console.log(`   ${tracked.updateAttempts} update attempts failed - forcing exit`);
+          console.log(`   ${profitNow >= 0 ? '+' : ''}${profitNow.toFixed(1)}% from entry`);
           await this.emergencyExit(tracked, currentPrice);
           return;
         }
         
         const profitNow = ((currentPrice - tracked.entryPrice) / tracked.entryPrice) * 100;
-        console.log(`\n  ⚠️ Price below order: ${tracked.marketSlug.substring(0, 25)} [${tracked.updateAttempts}/${MAX_UPDATE_ATTEMPTS}]`);
-        console.log(`     Order @ $${tracked.currentOrderPrice.toFixed(3)} | Price: $${currentPrice.toFixed(3)} (${profitNow >= 0 ? '+' : ''}${profitNow.toFixed(1)}%)`);
+        console.log(`\n⚠️ Price below order: ${tracked.marketSlug.substring(0, 25)} [${tracked.updateAttempts}/${MAX_UPDATE_ATTEMPTS}]`);
+        console.log(`   Order @ $${tracked.currentOrderPrice.toFixed(3)} | Price: $${currentPrice.toFixed(3)} (${profitNow >= 0 ? '+' : ''}${profitNow.toFixed(1)}%)`);
         await this.cancelAndReplace(tracked, currentPrice);
       }
     }
@@ -342,7 +383,7 @@ export class TakeProfitManager {
       
       // If we're at a loss, exit via emergency
       if (currentPrice < tracked.entryPrice * 0.98) {
-        console.log(`     ⚠️ Price below entry - executing emergency exit`);
+        console.log(`   ⚠️ Price below entry - executing emergency exit`);
         await this.emergencyExit(tracked, currentPrice);
         return;
       }
@@ -352,7 +393,7 @@ export class TakeProfitManager {
     
     const value = tracked.size * finalPrice;
     const expectedProfit = ((finalPrice - tracked.entryPrice) / tracked.entryPrice) * 100;
-    
+
     try {
       const result = await this.trader.executeTrade({
         tokenId: tracked.tokenId,
@@ -364,29 +405,30 @@ export class TakeProfitManager {
       if (result.success && result.orderId) {
         tracked.currentOrderId = result.orderId;
         tracked.currentOrderPrice = finalPrice;
-        console.log(`     📤 Order @ $${finalPrice.toFixed(3)} (${expectedProfit >= 0 ? '+' : ''}${expectedProfit.toFixed(1)}%)`);
+        console.log(`   📤 Order @ $${finalPrice.toFixed(3)} (${expectedProfit >= 0 ? '+' : ''}${expectedProfit.toFixed(1)}%)`);
       } else {
         // Check if market is closed/resolved
         if (this.isMarketClosedError(result.error)) {
-          console.log(`     ⚠️ Market closed - removing from tracking`);
+          console.log(`   ⚠️ Market closed - removing from tracking`);
           this.trackedPositions.delete(tracked.tokenId);
           this.saveState();
         } else if (result.error?.includes('not enough balance')) {
-          // This shouldn't happen for SELL, but handle it
-          console.log(`     ⚠️ Allowance issue - try running: npm run cli set-allowances`);
-          tracked.updateAttempts++;
+          // For SELL, this usually means position already closed
+          console.log(`   ⚠️ Position likely closed - removing from tracking`);
+          this.trackedPositions.delete(tracked.tokenId);
+          this.saveState();
         } else {
-          console.log(`     ❌ Order failed: ${result.error}`);
+          console.log(`   ❌ Order failed: ${result.error}`);
           tracked.updateAttempts++;
         }
       }
     } catch (error: any) {
       if (this.isMarketClosedError(error.message)) {
-        console.log(`     ⚠️ Market closed - removing from tracking`);
+        console.log(`   ⚠️ Market closed - removing from tracking`);
         this.trackedPositions.delete(tracked.tokenId);
         this.saveState();
       } else {
-        console.log(`     ❌ Order error: ${error.message?.substring(0, 30)}`);
+        console.log(`   ❌ Order error: ${error.message?.substring(0, 30)}`);
         tracked.updateAttempts++;
       }
     }
@@ -397,7 +439,7 @@ export class TakeProfitManager {
     if (tracked.currentOrderId) {
       const cancelled = await this.trader.cancelOrder(tracked.currentOrderId);
       if (cancelled) {
-        console.log(`     🔄 Order cancelled`);
+        console.log(`   🔄 Order cancelled`);
       }
       tracked.currentOrderId = null;
       tracked.currentOrderPrice = 0;
@@ -437,7 +479,7 @@ export class TakeProfitManager {
     if (this.isSportsMarket(marketSlug)) {
       return SPORTS_TRAILING_STOP;
     }
-    return this.trailingStopPercent;
+    return this.stopLossPercent;
   }
 
   private async emergencyExit(tracked: TrackedPosition, currentPrice: number): Promise<void> {
@@ -447,8 +489,21 @@ export class TakeProfitManager {
       tracked.currentOrderId = null;
     }
     
-    // Try aggressive FOK at 10% below current price (more likely to fill)
-    const aggressivePrice = currentPrice * 0.90;
+    // Get best bid from orderbook for realistic pricing
+    let targetPrice = currentPrice * 0.90; // Fallback to -10%
+    
+    try {
+      const bestBid = await this.trader.getBestBid(tracked.tokenId);
+      if (bestBid && bestBid > 0) {
+        // Use best bid with small discount for guaranteed fill
+        targetPrice = bestBid * 0.98; // 2% below best bid
+        console.log(`   📖 Best bid: $${bestBid.toFixed(3)} → targeting $${targetPrice.toFixed(3)}`);
+      }
+    } catch {
+      // If orderbook fetch fails, use fallback
+    }
+    
+    const aggressivePrice = Math.min(targetPrice, currentPrice * 0.95); // Max -5% from current
     const value = tracked.size * aggressivePrice;
     
     try {
@@ -458,10 +513,10 @@ export class TakeProfitManager {
         amount: value,
         price: aggressivePrice,
       }, 'FOK');
-      
+
       if (result.success) {
         const profit = ((aggressivePrice - tracked.entryPrice) / tracked.entryPrice) * 100;
-        console.log(`     🚨 EXIT @ $${aggressivePrice.toFixed(3)} (${profit >= 0 ? '+' : ''}${profit.toFixed(1)}%)`);
+        console.log(`   🚨 EXIT @ $${aggressivePrice.toFixed(3)} (${profit >= 0 ? '+' : ''}${profit.toFixed(1)}%)`);
         this.trackedPositions.delete(tracked.tokenId);
         this.saveState();
         return;
@@ -469,39 +524,58 @@ export class TakeProfitManager {
       
       // Check if market is closed
       if (this.isMarketClosedError(result.error)) {
-        console.log(`     ⚠️ Market closed - removing from tracking`);
+        console.log(`   ⚠️ Market closed - removing from tracking`);
         this.trackedPositions.delete(tracked.tokenId);
         this.saveState();
         return;
       }
       
-      // FOK failed - try even lower price (20% below)
-      const veryLowPrice = currentPrice * 0.80;
+      // FOK failed - try more aggressive price
+      let veryLowPrice = currentPrice * 0.80;
+      
+      try {
+        const bestBid = await this.trader.getBestBid(tracked.tokenId);
+        if (bestBid && bestBid > 0) {
+          veryLowPrice = bestBid * 0.95;
+        }
+      } catch {
+        // Use fallback
+      }
+      
       result = await this.trader.executeTrade({
         tokenId: tracked.tokenId,
         side: 'SELL',
         amount: tracked.size * veryLowPrice,
         price: veryLowPrice,
       }, 'FOK');
-      
+
       if (result.success) {
         const profit = ((veryLowPrice - tracked.entryPrice) / tracked.entryPrice) * 100;
-        console.log(`     🚨 EXIT @ $${veryLowPrice.toFixed(3)} (${profit >= 0 ? '+' : ''}${profit.toFixed(1)}% - high slippage)`);
+        console.log(`   🚨 EXIT @ $${veryLowPrice.toFixed(3)} (${profit >= 0 ? '+' : ''}${profit.toFixed(1)}% - slippage)`);
         this.trackedPositions.delete(tracked.tokenId);
         this.saveState();
         return;
       }
       
-      // Check again for closed market
       if (this.isMarketClosedError(result.error)) {
-        console.log(`     ⚠️ Market closed - removing from tracking`);
+        console.log(`   ⚠️ Market closed - removing from tracking`);
         this.trackedPositions.delete(tracked.tokenId);
         this.saveState();
         return;
       }
       
-      // Still failed - place aggressive GTC order and move on
-      const lastResortPrice = currentPrice * 0.70;
+      // Still failed - place aggressive GTC order
+      let lastResortPrice = currentPrice * 0.70;
+      
+      try {
+        const bestBid = await this.trader.getBestBid(tracked.tokenId);
+        if (bestBid && bestBid > 0) {
+          lastResortPrice = Math.max(bestBid * 0.90, 0.01);
+        }
+      } catch {
+        // Use fallback
+      }
+      
       result = await this.trader.executeTrade({
         tokenId: tracked.tokenId,
         side: 'SELL',
@@ -513,26 +587,40 @@ export class TakeProfitManager {
         tracked.currentOrderId = result.orderId;
         tracked.currentOrderPrice = lastResortPrice;
         const profit = ((lastResortPrice - tracked.entryPrice) / tracked.entryPrice) * 100;
-        console.log(`     📤 Last resort order @ $${lastResortPrice.toFixed(3)} (${profit >= 0 ? '+' : ''}${profit.toFixed(1)}%)`);
+        console.log(`   📤 Last resort @ $${lastResortPrice.toFixed(3)} (${profit >= 0 ? '+' : ''}${profit.toFixed(1)}%)`);
         this.saveState();
       } else if (this.isMarketClosedError(result.error)) {
-        console.log(`     ⚠️ Market closed - removing from tracking`);
+        console.log(`   ⚠️ Market closed - removing from tracking`);
         this.trackedPositions.delete(tracked.tokenId);
         this.saveState();
       } else {
-        console.log(`     ❌ All exit attempts failed - removing from tracking`);
-        this.trackedPositions.delete(tracked.tokenId);
+        tracked.emergencyFailedCount = (tracked.emergencyFailedCount || 0) + 1;
+        tracked.lastEmergencyAttempt = Date.now();
+        
+        const retryIntervals = [60000, 300000, 900000, 1800000];
+        const failCount = tracked.emergencyFailedCount;
+        const retryInterval = retryIntervals[Math.min(failCount - 1, retryIntervals.length - 1)];
+        const retryMin = Math.floor(retryInterval / 60000);
+        
+        console.log(`   ⚠️ Exit failed (${failCount}x) - retry in ${retryMin}m`);
         this.saveState();
       }
     } catch (error: any) {
       const errorMsg = error.message || '';
       if (this.isMarketClosedError(errorMsg)) {
-        console.log(`     ⚠️ Market closed - removing from tracking`);
+        console.log(`   ⚠️ Market closed - removing from tracking`);
+        this.trackedPositions.delete(tracked.tokenId);
       } else {
-        console.log(`     ❌ Exit error - removing from tracking`);
+        tracked.emergencyFailedCount = (tracked.emergencyFailedCount || 0) + 1;
+        tracked.lastEmergencyAttempt = Date.now();
+        
+        const retryIntervals = [60000, 300000, 900000, 1800000];
+        const failCount = tracked.emergencyFailedCount;
+        const retryInterval = retryIntervals[Math.min(failCount - 1, retryIntervals.length - 1)];
+        const retryMin = Math.floor(retryInterval / 60000);
+        
+        console.log(`   ⚠️ Exit error (${failCount}x) - retry in ${retryMin}m`);
       }
-      // Always remove from tracking on error to stop spam
-      this.trackedPositions.delete(tracked.tokenId);
       this.saveState();
     }
   }
@@ -546,7 +634,7 @@ export class TakeProfitManager {
         const profitPercent = tracked.currentOrderPrice > 0 
           ? ((tracked.currentOrderPrice - tracked.entryPrice) / tracked.entryPrice) * 100 
           : 0;
-        console.log(`  ✅ Sold: ${tracked.marketSlug.substring(0, 25)} (${profitPercent >= 0 ? '+' : ''}${profitPercent.toFixed(1)}%)`);
+        console.log(`✅ Sold: ${tracked.marketSlug.substring(0, 25)} (${profitPercent >= 0 ? '+' : ''}${profitPercent.toFixed(1)}%)`);
         this.trackedPositions.delete(tokenId);
         changed = true;
       }

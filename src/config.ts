@@ -11,8 +11,9 @@ export interface Config {
   profit_take_percent?: number;
   max_buys_per_token?: number;      // Max times to buy same token (prevents spam from limit orders)
   cooldown_minutes?: number;         // Cooldown after position closes before buying same token again
-  trailing_stop_percent?: number;    // Trailing stop % from peak (default 15)
+  stop_loss_percent?: number;         // Stop-loss % drop from peak before selling (default 15)
   skip_sports?: boolean;             // Skip volatile sports markets (NBA, NFL, etc.)
+  stop_loss_enabled?: boolean;       // Enable/disable trailing stop loss (default true)
 }
 
 export const CONFIG: Config = {
@@ -23,8 +24,9 @@ export const CONFIG: Config = {
   profit_take_percent: 15,
   max_buys_per_token: 3,
   cooldown_minutes: 30,        // 30 min cooldown after position closes
-  trailing_stop_percent: 15,   // 15% trailing stop (safer than 10%)
+  stop_loss_percent: 15,       // 15% drop from peak triggers exit (only if still in profit)
   skip_sports: false,          // Set to true to skip NBA, NFL, NHL etc.
+  stop_loss_enabled: true,     // Set to false to disable trailing stop loss
 };
 
 export function loadConfig(): Config {

@@ -1,210 +1,232 @@
-# Polymarket Copy Trading Bot
+# 🐋 Polymarket Copy Trading Bot
 
-Automated copy trading bot for Polymarket with advanced features: adaptive take-profit, trailing stops, and smart position management.
+Advanced automated copy trading bot for Polymarket prediction markets. Monitors whale wallets and copies their trades with intelligent position sizing, adaptive take-profit, and trailing stop-loss protection.
 
-## Features
+## ✨ Features
 
-- 🐋 **Copy Trading** — Monitor successful traders and mirror their positions
-- 📊 **Proportional Sizing** — Scale trades based on your balance
-- 🎯 **Adaptive Take-Profit** — Dynamic limit orders that adjust with market
-- 📉 **Trailing Stop** — Lock in profits with configurable trailing stops (25% for sports)
-- 🔄 **Smart Exits** — Emergency market sells on significant drops
-- ⏱️ **Cooldown System** — Prevent re-entry after closing positions (default 30 min)
-- 🚫 **Position Limits** — Max buys per token to prevent overexposure
-- 💾 **State Persistence** — Recovers tracked positions after restart
-- 📈 **Real-time P&L** — Track wins/losses and session performance
+### Core Trading
+- **🎯 Smart Copy Trading** — Real-time monitoring of whale wallets with instant trade replication
+- **📊 Proportional Sizing** — Automatically scales trade sizes based on your balance vs whale's
+- **🔄 Position Limits** — Configurable max buys per token to prevent overexposure
+- **⏱️ Cooldown System** — Prevents rapid rebuying of the same position
+- **⏸️ Auto-Pause** — Stops buying when balance drops below minimum stake
 
-## Quick Start
+### Advanced Take-Profit System
+- **📈 Adaptive Trailing Stop** — Dynamic stop-loss that tracks peak prices
+  - Default: 15% trailing stop from peak
+  - Sports markets: 25% trailing stop (higher volatility tolerance)
+- **💰 Profit Triggers** — Automatically activates at +15% profit
+- **🔄 Smart Order Updates** — Repositions orders as market moves up
+- **🚨 Emergency Exit** — Aggressive market sells when stop-loss triggered
+- **💾 State Persistence** — Saves tracking state for recovery after restart
+- **⚡ Fast Monitoring** — 3-second checks for volatile markets
+
+### Risk Management
+- **🛡️ Position-Based Stops** — Protects profits without closing at a loss
+- **📉 Stop-Loss Protection** — Configurable stop-loss percentage (can be disabled)
+- **🏀 Sports Market Detection** — Wider stops for high-volatility sports markets
+- **🔢 Decimal Precision** — Proper rounding for API compliance (SELL: 2 decimals, BUY: 4 decimals)
+
+### Session Tracking
+- **📊 Real-Time P&L** — Live session profit/loss tracking
+- **🏆 Win/Loss Stats** — Track winning and losing trades
+- **💵 Balance Monitoring** — Real-time USDC and position value display
+
+## 🚀 Quick Start
 
 ```bash
-# 1. Install dependencies
+# Install dependencies
 npm install
 
-# 2. Setup environment
+# Setup environment
 cp env.example .env
-# Edit .env with your credentials
+# Edit .env with your private key and wallet address
 
-# 3. Setup configuration
-cp config.example.json config.json
-# Add wallet addresses to track
+# Configure tracking (edit config.json)
+# Add whale wallets, adjust stake sizes, set limits
 
-# 4. Build and run
+# Build and run
 npm run build
 npm run bot
 ```
 
-## Configuration
+## ⚙️ Configuration
 
 ### Environment Variables (.env)
 
 ```env
-# Required
-PRIVATE_KEY=0xYourPrivateKey              # Your wallet private key
-FUNDER_ADDRESS=0xYourPolymarketProxy      # Your Polymarket trading wallet address
-
-# Optional
-POLY_API_KEY=your-api-key                 # Polymarket API key (if needed)
-POLY_PASSPHRASE=your-passphrase           # API passphrase
-TAKE_PROFIT_PERCENT=15                    # Default take-profit trigger %
-DEBUG=false                               # Enable verbose logging
+PRIVATE_KEY=0xYourPrivateKey        # MetaMask/Wallet private key
+FUNDER_ADDRESS=0xYourTradingWallet  # Polymarket wallet address
+TAKE_PROFIT_PERCENT=15              # Profit trigger threshold (%)
+DEBUG=false                         # Enable verbose logging
 ```
-
-**Finding Your FUNDER_ADDRESS:**
-1. Go to polymarket.com and connect wallet
-2. Open browser console
-3. Check network requests for your proxy wallet address
-4. Or leave empty - bot will try to detect it automatically
 
 ### Trading Settings (config.json)
 
 ```json
 {
   "wallets_to_track": [
-    "0x1234567890abcdef1234567890abcdef12345678",
-    "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"
+    "0x33f6d97080e5215eb2cf679531496ace0330e0de"
   ],
-  "mode": "proportional",
-  "min_stake": 5,
-  "max_stake": 300,
-  "max_buys_per_token": 3,
-  "cooldown_minutes": 30,
-  "trailing_stop_percent": 15,
-  "skip_sports": false
+  "mode": "proportional",           // Sizing mode
+  "min_stake": 7,                   // Minimum trade size (USDC)
+  "max_stake": 300,                 // Maximum trade size (USDC)
+  "max_buys_per_token": 3,          // Max positions per token
+  "cooldown_minutes": 30,           // Rebuy cooldown period
+  "stop_loss_percent": 15,          // Trailing stop % (default)
+  "stop_loss_enabled": true,        // Enable/disable stop-loss
+  "skip_sports": false              // Skip sports markets
 }
 ```
 
-**Settings Explained:**
-- `wallets_to_track` — Wallet addresses to copy trades from
-- `mode` — `"proportional"` or `"fixed"`
-- `min_stake` — Minimum order size (must be ≥ $5 for Polymarket)
-- `max_stake` — Maximum order size per trade
-- `max_buys_per_token` — Limit buys for same token (prevents spam)
-- `cooldown_minutes` — Wait time before re-entering same market
-- `trailing_stop_percent` — % drop from peak to trigger sell (sports: 25%)
-- `skip_sports` — Skip volatile sports markets
+### Configuration Parameters
 
-## How It Works
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `min_stake` | 7 | Minimum trade size in USDC |
+| `max_stake` | 300 | Maximum trade size in USDC |
+| `max_buys_per_token` | 3 | Max number of buys for same token |
+| `cooldown_minutes` | 30 | Minutes before allowing rebuy |
+| `stop_loss_percent` | 15 | Trailing stop % from peak (default markets) |
+| `stop_loss_enabled` | true | Enable automatic stop-loss exits |
+| `skip_sports` | false | Skip sports markets entirely |
 
-### Copy Trading
-1. Bot monitors tracked wallets every 10 seconds
-2. When tracked wallet buys → bot copies with proportional sizing
-3. When tracked wallet sells → bot sells matching position
-4. Automatically pauses when balance < min_stake
+**Note:** Sports markets automatically use 25% trailing stop regardless of `stop_loss_percent` setting.
 
-### Take-Profit System
-1. **Tracking Trigger**: Starts tracking at +15% profit (configurable)
-2. **Dynamic Orders**: Places limit orders 2% below current price
-3. **Trailing Stop**: Sells if price drops 15% from peak (25% for sports)
-4. **Price Updates**: Adjusts orders as price moves up
-5. **Emergency Exit**: Market sell if trailing stop triggered or max update attempts reached
+## 📖 How It Works
+
+### Trading Flow
+
+1. **Monitor** — Bot polls tracked wallets every 5 seconds for new trades
+2. **Analyze** — Validates trade against position limits and cooldown rules
+3. **Size** — Calculates proportional stake based on balance ratio
+4. **Execute** — Places market order matching whale's side (BUY/SELL)
+5. **Track** — Monitors position for take-profit opportunities
+6. **Exit** — Automatically sells when profit target or stop-loss triggers
+
+### Take-Profit Logic
+
+```
+1. Position reaches +15% profit → Start tracking
+2. Price continues up → Update trailing stop to track new peaks
+3. If price drops 15% from peak → Trigger stop-loss
+4. Place limit order 2% below current price
+5. If order not filled → Update price or emergency exit
+```
 
 ### Position Management
-- **Max 5 update attempts** per position before forced exit
-- **Cooldown after close** to prevent immediate re-entry
-- **State persistence** survives bot restarts
-- **Smart error handling** for closed/resolved markets
 
-## Finding Smart Wallets to Track
+- **Multiple Buys**: Bot can buy same token up to 3 times (configurable)
+- **Cooldown Protection**: 30-minute cooldown prevents rapid rebuying
+- **Per-Wallet Tracking**: Sells only match specific wallet's position
+- **State Persistence**: Tracking survives bot restarts
 
-- **Polymarket Leaderboard**: https://polymarket.com/leaderboard
-- **Predictfolio**: https://predictfolio.com/
-- **Polymarket Activity**: https://polymarket.com/activity
+## 🔍 Finding Whale Wallets
 
-Look for wallets with:
-- High win rate (>60%)
-- Consistent returns
-- Active trading history
-- Similar risk tolerance to yours
+**Top Traders**
+- [Polymarket Leaderboard](https://polymarket.com/leaderboard) — Official rankings
+- [Predictfolio](https://predictfolio.com/) — Analytics and insights
 
-## Commands
+**Tips**
+- Look for consistent profit over volume
+- Track multiple whales for diversification
+- Monitor their sports vs politics preferences
+- Check average position sizes vs your budget
+
+## 📜 Commands
 
 | Command | Description |
 |---------|-------------|
-| `npm run bot` | Start copy trading bot |
-| `npm run balance` | Check wallet balance and allowances |
-| `npm run cli set-allowances` | Setup trading permissions |
-| `npm run cli close-all` | Emergency close all positions |
-| `npm run build` | Compile TypeScript |
-| `npm run dev` | Development mode with auto-reload |
+| `npm run bot` | Start the trading bot |
+| `npm run balance` | Check wallet balance and positions |
+| `npm run build` | Compile TypeScript to JavaScript |
+| `npm run dev` | Development mode with hot reload |
+| `npm run clean` | Remove compiled files |
 
-## Requirements
-
-- **Node.js** 18+ 
-- **Polymarket Account** with USDC deposited
-- **MetaMask** or compatible Web3 wallet
-- **Trading Allowances** set (run `npm run cli set-allowances`)
-
-## Troubleshooting
-
-### "API timeout" errors
-- Reduce polling frequency in bot.ts
-- API has rate limits, timeouts are normal and automatically retried
-
-### "Min $5" errors on sell
-- Positions must have ≥5 shares to sell via API
-- Increase `min_stake` to 6-7 to ensure sufficient shares
-
-### "not enough balance / allowance"
-- For BUY: deposit more USDC
-- For SELL: run `npm run cli set-allowances`
-
-### Position not selling at profit
-- Check `take-profit-state.json` for tracking status
-- Verify position still exists (not manually closed)
-- Sports markets may need wider trailing stop (25%)
-
-## Safety Features
-
-- **Cached Balance**: Reduces API calls (30s TTL)
-- **Retry Logic**: Automatic retry on network/API errors (3 attempts)
-- **Error Recovery**: Continues on temporary failures
-- **State Backup**: Positions saved every 30 seconds
-- **Rate Limiting**: Configurable polling intervals
-
-## Performance Tips
-
-1. **Start Small**: Test with min_stake = $5-10
-2. **Diversify**: Track 3-5 successful traders
-3. **Set Limits**: Use max_buys_per_token to prevent overexposure
-4. **Monitor API**: Watch for timeout errors, adjust intervals if needed
-5. **Review Stats**: Check wins/losses regularly
-
-## Architecture
+## 🏗️ Architecture
 
 ```
 src/
-├── bot.ts           # Main orchestrator
-├── watcher.ts       # Monitors wallet trades
-├── executor.ts      # Executes trades
-├── trader.ts        # CLOB API interface
-├── take-profit.ts   # Adaptive TP manager
-├── pnl-tracker.ts   # P&L calculation
-├── api.ts           # Polymarket data API
-└── wallet.ts        # Wallet management
+├── main.ts           # CLI entry point
+├── bot.ts            # Main bot orchestrator
+├── watcher.ts        # Wallet monitoring
+├── trader.ts         # Trade execution (CLOB API)
+├── executor.ts       # Position management
+├── take-profit.ts    # Adaptive take-profit system
+├── sizing.ts         # Proportional sizing logic
+├── risk.ts           # Risk management rules
+├── pnl-tracker.ts    # P&L and stats tracking
+├── wallet.ts         # Wallet and balance management
+├── api.ts            # Polymarket REST API
+└── config.ts         # Configuration loading
 ```
 
-## API Rate Limits
+## 📋 Requirements
 
-The bot makes approximately:
-- **60-90 requests/minute** to Polymarket APIs
-- Automatic retry on timeouts/errors
-- Increase polling intervals if hitting limits
+- **Node.js** 18+ (with ESM support)
+- **Polymarket Account** with USDC funded
+- **MetaMask Wallet** linked to Polymarket
+- **Private Key** exported from MetaMask
 
-## License
+## 🐛 Troubleshooting
 
-MIT - See LICENSE file
+### Common Issues
 
-## Disclaimer
+**"Order failed: invalid amounts"**
+- Fixed in latest version with proper decimal rounding
+- Rebuild: `npm run build`
 
-**Use at your own risk.** Trading prediction markets involves substantial risk of loss. This bot is for educational purposes. The authors are not responsible for any financial losses incurred through the use of this software.
+**"Not enough balance"**
+- Check balance: `npm run balance`
+- Deposit more USDC to Polymarket
+- Lower `min_stake` in config.json
 
-## Contributing
+**"Position likely closed"**
+- Take-profit already executed by smart contract
+- Position was manually closed on Polymarket
+- Bot will auto-cleanup tracking
 
-Issues and pull requests welcome!
+**"502/503 CLOB errors"**
+- Automatic retry logic handles temporary API issues
+- If persistent, check Polymarket API status
 
-## Support
+## ⚠️ Risk Warning
 
-For issues, please open a GitHub issue with:
-- Error message or unexpected behavior
-- Your configuration (without private keys!)
-- Steps to reproduce
+**This bot is for educational purposes. Trading prediction markets involves substantial risk of loss.**
+
+- Start with small stakes to test
+- Never trade more than you can afford to lose
+- Whale wallets can be wrong
+- Markets can gap against you
+- API issues can prevent exits
+- Test thoroughly before scaling up
+
+## 📄 License
+
+MIT License - see LICENSE file for details
+
+## 🤝 Contributing
+
+Issues and pull requests welcome! Please test thoroughly before submitting.
+
+## 💡 Tips
+
+- Start with `min_stake: 7` and `max_stake: 50` until comfortable
+- Enable stop-loss initially: `stop_loss_enabled: true`
+- Track 2-3 whales maximum to start
+- Monitor first few days closely
+- Keep at least 2x `max_stake` in balance for opportunities
+- Sports markets are more volatile — use with caution
+
+## 📈 Roadmap
+
+- [ ] Web dashboard for monitoring
+- [ ] Multi-wallet support (multiple trading accounts)
+- [ ] Advanced analytics and backtesting
+- [ ] Discord/Telegram notifications
+- [ ] Custom strategy scripts
+- [ ] Paper trading mode
+
+---
+
+**Built with TypeScript + Polymarket CLOB API**
