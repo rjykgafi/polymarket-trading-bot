@@ -44,6 +44,7 @@ cp env.example .env
 
 # Configure tracking (edit config.json)
 # Add whale wallets, adjust stake sizes, set limits
+cp config.example.json config.json
 
 # Build and run
 npm run build
